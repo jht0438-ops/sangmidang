@@ -1,24 +1,124 @@
+"""파리크라상 회계·수익성·해외투자 진단 (분할 이전 감사보고서 기반)."""
 import streamlit as st
-import streamlit.components.v1 as components
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
-st.set_page_config(
-    page_title="파리크라상 | 재무·원가·해외투자 진단",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
+st.set_page_config(page_title='파리크라상 | 회계 관점 경영진단', page_icon='📊', layout='wide')
+st.markdown('''<style>.block-container{padding-top:1.5rem;max-width:1250px}div[data-testid="stMetric"]{background:#f5f7fb;padding:17px;border-radius:12px;border:1px solid #e6ebf3}h1,h2,h3{color:#182c49}.stTabs [data-baseweb="tab"]{font-weight:650}</style>''', unsafe_allow_html=True)
 
-st.markdown(
-    """
-    <style>
-    .block-container { padding: 0.5rem 0.75rem 1rem; max-width: 100%; }
-    header[data-testid="stHeader"] { display: none; }
-    footer { display: none; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# 자료: 상미당홀딩스(구 파리크라상) 2025 별도감사보고서 재무제표 및 주석 4, 8, 17~19.
+# 2024·2025년은 분할 이전 구 법인 기준. 금액 단위: 억 원 (원본 원 ÷ 1e8, 천원 ÷ 1e5).
+D = {
+ 2024:dict(sales=19307.06299002,cogs=10432.41776703,gross=8874.64522299,sga=8651.28321160,op=223.36201139,net=319.47085,ar=810.30627368,ocf=970.87475647,inventory=454.83501,prod_sales=9852.09542,goods_sales=9255.66114,other_sales=199.30643,prod_cogs=5271.13558,goods_cogs=5161.28218,prod_make=4239.07622,prod_transfer=1020.01473,goods_purchase=3135.64973,goods_transfer=2014.35601),
+ 2025:dict(sales=19780.01066837,cogs=10945.35390340,gross=8834.65676497,sga=8574.34696214,op=260.30980283,net=-423.23423,ar=1005.30335633,ocf=735.53501486,inventory=540.43002,prod_sales=9820.17212,goods_sales=9393.99433,other_sales=565.84422,prod_cogs=5995.57388,goods_cogs=4949.78002,prod_make=4265.83342,prod_transfer=1747.79160,goods_purchase=3731.68477,goods_transfer=1200.22986)
+}
+# 별도감사보고서 주석 8, 법인별 지분법손익, 억원.
+INV = pd.DataFrame([
+ ('SPC INVESTMENT LIMITED COMPANY',-77.58047,-170.55184,'중국 투자사업 관련 법인'),
+ ('PARIS BAGUETTE BON DOUX, INC.',-20.08666,-54.41053,'미국 투자법인'),
+ ('PARIS BAGUETTE SINGAPORE PTE. LTD.',-76.11316,-182.93475,'싱가포르 법인'),
+ ('PARIS BAGUETTE VIETNAM CO., LTD.',-15.94250,-15.66599,'베트남 법인'),
+ ('SPC SAM LIP',375.08014,59.93922,'국내 관계회사'),
+ ('SPL',32.78876,-64.11685,'국내 관계회사'),
+ ('SPC',-134.77133,-94.42095,'국내 관계회사'),
+ ('Big Bite',-14.67357,-34.60193,'투자법인')
+],columns=['법인','2024','2025','분류'])
+INV['변화']=INV['2025']-INV['2024']
+CON = {2024:dict(sales=56244.25,op=869.57,sga=15167.19,advert=781.43711,fees=3480.59346),2025:dict(sales=55692.52,op=305.98,sga=17060.61,advert=1477.28619,fees=4772.21907)}
 
-HTML = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>파리크라상 | 재무·원가·해외투자 진단</title><style>\n:root{--navy:#172b47;--blue:#3468dc;--ink:#202c3e;--muted:#69798e;--bg:#f4f6fa;--line:#e2e8f1;--red:#c84b57;--green:#178267}*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:\'Pretendard\',\'Malgun Gothic\',Arial,sans-serif;color:var(--ink);line-height:1.55}.shell{max-width:1200px;margin:auto;padding:26px 22px 70px}.hero{background:linear-gradient(115deg,#172b47,#274c78);color:white;border-radius:22px;padding:30px 36px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#a9c7ef;font-weight:800}.hero h1{font-size:29px;margin:9px 0}.hero p{color:#d6e2f3;margin:0;font-size:14px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.nav button{background:white;border:1px solid var(--line);color:var(--muted);padding:11px 17px;border-radius:12px;font-weight:800;cursor:pointer}.nav button.active{background:var(--navy);color:white;border-color:var(--navy)}.panel{display:none}.panel.active{display:block}.section{background:white;border:1px solid var(--line);border-radius:18px;padding:24px;margin-bottom:17px;box-shadow:0 3px 13px #1c355109}.section h2{font-size:19px;margin:0 0 8px}.section h3{font-size:15px;margin:0 0 12px}.sub{color:var(--muted);font-size:13px;margin:4px 0 18px}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:17px}.kpi{background:white;border:1px solid var(--line);border-radius:16px;padding:18px}.kpi small{color:var(--muted);font-size:12px}.kpi strong{display:block;font-size:24px;margin:8px 0 3px;letter-spacing:-.04em}.kpi span{font-size:12px;color:var(--muted)}.negative{color:var(--red)}.positive{color:var(--green)}.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}th{background:#f0f4fa;text-align:left;color:#4d6079;font-weight:800}td,th{padding:11px 12px;border-bottom:1px solid var(--line)}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}tr.total{background:#f7f9fc;font-weight:800}.tag{font-size:11px;background:#eaf0fd;color:#2852a1;padding:4px 8px;border-radius:20px;font-weight:800}.warn{background:#fff8eb;border:1px solid #f3e2c1;border-radius:12px;padding:12px 15px;font-size:13px;color:#745526}.insight{border-left:4px solid var(--blue);padding:12px 15px;background:#f1f5fe;border-radius:0 10px 10px 0;font-size:14px}.barrow{display:grid;grid-template-columns:190px 1fr 90px;gap:10px;align-items:center;margin:13px 0;font-size:12px}.track{height:13px;background:#edf1f6;border-radius:20px;overflow:hidden}.fill{height:100%;background:var(--blue);border-radius:20px}.fill.red{background:#dc7680}.legend{font-size:12px;color:var(--muted)}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.step{background:#f7f9fc;border:1px solid var(--line);padding:15px;border-radius:13px}.step b{display:block;font-size:13px;margin-bottom:6px}.step p{font-size:12px;color:var(--muted);margin:0}.action{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}.action .head{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:9px}.action h3{margin:0}.action p{font-size:13px;margin:7px 0}.action small{color:var(--muted)}.filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.filter select{border:1px solid #cdd8e7;border-radius:9px;padding:9px;background:white}.foot{font-size:12px;color:var(--muted);margin-top:12px}.source{font-size:12px;color:#526780;border-top:1px dashed var(--line);margin-top:16px;padding-top:12px}.source a{color:#315fbe}.statline{display:flex;gap:15px;flex-wrap:wrap}.statline div{flex:1;min-width:150px;border:1px solid var(--line);border-radius:12px;padding:12px}.statline small{display:block;color:var(--muted)}.statline b{font-size:19px}.printbtn{float:right;border:1px solid #cdd8e7;border-radius:10px;padding:8px 12px;background:white;cursor:pointer}@media(max-width:850px){.kpis{grid-template-columns:repeat(2,1fr)}.cols,.steps{grid-template-columns:1fr}.barrow{grid-template-columns:115px 1fr 67px}.hero{padding:23px}.hero h1{font-size:23px}}@media print{.nav,.printbtn{display:none}.panel{display:block!important}.section{break-inside:avoid}.hero{background:#172b47!important;-webkit-print-color-adjust:exact}}\n</style></head><body><main class="shell"><header class="hero"><div class="eyebrow">FINANCIAL INTELLIGENCE / 2026</div><h1>파리크라상 재무·원가·해외투자 진단</h1><p>감사보고서의 실제 수치 → 원인 분해 → 우선순위 → 회계 담당자의 실행 과제</p></header><nav class="nav" aria-label="분석 메뉴"><button class="active" data-tab="overview">01 종합 진단</button><button data-tab="domestic">02 국내 원가 분석</button><button data-tab="global">03 해외 투자 분석</button><button data-tab="report">04 실행 보고서</button></nav>\n<section id="overview" class="panel active"><div class="kpis" id="mainKpis"></div><div class="section"><h2>핵심 진단: 영업성과와 최종 손익의 괴리</h2><p class="sub">2023~2025년 분할 이전 파리크라상 별도재무제표. 단위: 억 원.</p><div class="tablewrap"><table id="overviewTable"></table></div><div class="insight" id="overviewInsight"></div><p class="source">출처: 2023~2025년 별도감사보고서 손익계산서(2025년 보고서 주석 17·18, 주석 8). 2026년 1월 물적분할 이전 법인(현 상미당홀딩스)의 과거 실적임.</p></div><div class="section"><h2>프로그램의 분석 범위</h2><div class="steps"><div class="step"><b>01 실제 재무성과</b><p>매출·원가·영업이익·순손익의 흐름을 파악합니다.</p></div><div class="step"><b>02 세부 원인 분해</b><p>제품/상품 매출원가와 투자법인별 지분법손익을 감사보고서 주석 수준까지 분해합니다.</p></div><div class="step"><b>03 실행 가능한 개선안</b><p>확인된 문제와 추가 검증이 필요한 가설을 구분하고 관리 지표를 제시합니다.</p></div></div></div><div class="warn">주의: 본 분석은 2026년 신설 파리크라상의 실적을 나타내지 않습니다. 별도재무제표의 지분법손익은 해외 공장 자체의 영업손익과 다르며, 2026년 가격 인상의 실현 효과를 의미하지 않습니다.</div></section>\n<section id="domestic" class="panel"><div class="section"><h2>국내 원가 구조: 무엇이 실제로 증가했는가?</h2><p class="sub">2025년 별도감사보고서 주석 17·18. 비교연도 선택 시 원가 변동이 자동 재계산됩니다. 단위: 억 원.</p><div class="filter"><label for="compare">비교 연도</label><select id="compare"><option value="2024">2024 → 2025</option><option value="2023">2023 → 2025</option></select></div><div class="kpis" id="costKpis"></div><div class="cols"><div><h3>매출원가 구성</h3><div id="costBars"></div><p class="legend">막대 길이는 선택 기간의 2025년 매출원가 규모를 나타냅니다.</p></div><div><h3>제품매출원가 분해</h3><div class="tablewrap"><table id="productTable"></table></div></div></div><div class="insight" id="domesticInsight"></div><div class="source">출처: 2024·2025년 별도감사보고서 주석 18(매출원가). 원자료 단위 천 원 → 억 원 환산. 재고·대체·제조원가 항목은 부호를 반영해 합산함.</div></div><div class="section"><h2>상품매출원가 분해</h2><div class="tablewrap"><table id="goodsTable"></table></div><div class="warn">‘타계정에서 대체’는 회계상 대체 항목입니다. 금액이 증가했다고 곧바로 원재료 가격 상승, 제조 비효율 또는 실제 현금지출 증가라고 해석할 수 없습니다. 대체의 거래 성격과 상대계정을 내부 원장으로 확인해야 합니다.</div></div><div class="section"><h2>2026년 가격 조정과 연결되는 회계관리 과제</h2><div class="steps"><div class="step"><b>품목별 수익성 점검</b><p>본사 공급단가, 제품별 제조원가, 출고량을 월별로 연결해 가격 조정 전후의 공급 마진을 확인합니다.</p></div><div class="step"><b>대체 계정 추적</b><p>제품·상품 매출원가의 타계정 대체 사유, 상대계정, 정산 주기를 확인합니다.</p></div><div class="step"><b>원가차이 분해</b><p>내부 원장 확보 후 구매단가·투입량·생산량 차이를 분리해 개선 우선순위를 정합니다.</p></div></div><p class="foot">2026년 소비자가격 인상률을 2025년 본사 매출액에 곱해 예상 이익을 계산하지 않습니다. 소비자가격과 본사 공급단가는 다르기 때문입니다.</p></div></section>\n<section id="global" class="panel"><div class="section"><h2>해외 투자법인별 손익 기여도</h2><p class="sub">2025년 별도감사보고서 주석 8. 지분법손익과 피투자회사 요약 매출액·당기순손익을 분리 표시합니다. 단위: 억 원.</p><div class="filter"><label for="sortGlobal">정렬 기준</label><select id="sortGlobal"><option value="loss">2025년 지분법손실 규모</option><option value="change">2024년 대비 악화 폭</option><option value="sales">2025년 피투자회사 매출액</option></select></div><div class="kpis" id="globalKpis"></div><div class="cols"><div><h3>2025년 해외 주요 투자법인 지분법손실</h3><div id="globalBars"></div></div><div><h3>2024 → 2025년 지분법손익</h3><div class="tablewrap"><table id="globalTable"></table></div></div></div><div class="source">출처: 2025년 별도감사보고서 주석 8 (4) 지분법적용투자주식의 증감내역, (7) 피투자회사의 요약재무정보. 여기의 해외 4개 법인은 분석 대상 예시이며, 전체 지분법손익에는 국내 투자법인도 포함됨.</div></div><div class="section"><h2>실제 매출 감소와 손익 악화를 구분하기</h2><div class="tablewrap"><table id="globalSalesTable"></table></div><div class="insight">매출이 감소하고 순손실이 확대된 법인은 판매 부진과 비용 구조를 함께 점검할 우선 후보입니다. 그러나 매출액·순손익만으로 인건비, 물류비, 감가상각비 중 어떤 항목이 원인인지 확정할 수 없습니다.</div></div><div class="section"><h2>해외 생산거점의 투자관리</h2><div class="steps"><div class="step"><b>말레이시아 공장</b><p>가동 후 실제 생산량·정상품 수량·제품별 제조원가·감가상각비를 월별로 관리합니다. 공개된 생산능력은 실제 생산실적이 아닙니다.</p></div><div class="step"><b>미국 텍사스 공장</b><p>공사 진행률·예산 대비 투자 집행·건설중인자산·사용 가능 시점을 확인해 감가상각 개시 및 투자 초과 위험을 관리합니다.</p></div><div class="step"><b>법인별 회계 연결</b><p>공장 운영 주체를 확인하고 투자법인·종속기업의 손익과 현금흐름을 구분해 성과를 평가합니다.</p></div></div><div class="warn">공장별 실제 집행액, 가동률, 생산수율, 제조원가는 현재 첨부된 감사보고서만으로 확인되지 않습니다. 투자법인별 지분법손실을 특정 공장의 손실로 귀속하지 않습니다.</div></div></section>\n<section id="report" class="panel"><div class="section"><button class="printbtn" onclick="window.print()">인쇄 / PDF 저장</button><h2>파리크라상 회계 관점 경영개선 제언</h2><p class="sub">공개된 수치로 검증한 문제 → 실행 과제 → 추가로 필요한 내부 데이터</p><div id="actions"></div></div><div class="section"><h2>분석 신뢰도와 사용 제한</h2><div class="tablewrap"><table><thead><tr><th>구분</th><th>확인 수준</th><th>프로그램 처리</th></tr></thead><tbody><tr><td>2023~2025년 별도 손익 및 원가 구성</td><td>감사보고서 확인</td><td>실제 수치로 계산</td></tr><tr><td>해외 주요 투자법인 지분법손익</td><td>감사보고서 확인</td><td>실제 수치로 계산</td></tr><tr><td>제품별 공급단가·판매량·제조원가</td><td>공개자료 부재</td><td>추가 검증 과제로 표시</td></tr><tr><td>해외 공장별 가동률·수율·투자집행액</td><td>공개자료 부재</td><td>임의 추정하지 않음</td></tr><tr><td>2026년 신설법인 실적</td><td>과거 재무제표와 법적 실체 상이</td><td>2025년 이전 자료를 역사적 참고로만 사용</td></tr></tbody></table></div><p class="source">자료 출처: 업로드된 파리크라상(현 상미당홀딩스) 2023·2024·2025년 별도감사보고서. 원문 대조 기준: 2025년 감사보고서 주석 8·17·18 및 손익계산서. 본 문서는 공개정보 기반 분석이며 투자 판단·회계감사 의견이 아닙니다.</p></div></section></main><script>\n// 모든 재무 원자료는 감사보고서 \'천원\' 단위. 화면에서 억 원으로 환산(÷100,000).\nconst raw={\n2023:{sales:2008359930,cogs:1089158347,gross:919201583,op:19881706,net:7849062,prodSales:1063937385,goodsSales:938105607,otherSales:6316938,product:{begin:8061361,make:442761298,transfer:119703631,end:6959965,total:563566326},goods:{begin:10264191,buy:287311033,transfer:241229972,end:13213175,total:525592021}},\n2024:{sales:1930706299,cogs:1043241776,gross:887464522,op:22336201,net:31947085,prodSales:985209542,goodsSales:925566114,otherSales:19930643,product:{begin:6959965,make:423907622,transfer:102001473,end:5755502,total:527113558},goods:{begin:13213175,buy:313564973,transfer:201435601,end:12085531,total:516128218}},\n2025:{sales:1978001067,cogs:1094535390,gross:883465676,op:26030980,net:-42323423,prodSales:982017212,goodsSales:939399433,otherSales:56584422,product:{begin:5755502,make:426583342,transfer:174779160,end:7560616,total:599557388},goods:{begin:12085530,buy:373168477,transfer:120022986,end:10298991,total:494978002}}};\nconst overseas=[{name:\'SPC INVESTMENT\',full:\'SPC INVESTMENT LIMITED COMPANY\',p24:-7758047,p25:-17055184,s24:187872684,s25:146031929,n24:-7758047,n25:-17055184},{name:\'PB BON DOUX\',full:\'PARIS BAGUETTE BON DOUX, INC.\',p24:-2008666,p25:-5441053,s24:318004516,s25:388818166,n24:-2029516,n25:-5445387},{name:\'PB SINGAPORE\',full:\'PARIS BAGUETTE SINGAPORE PTE. LTD.\',p24:-7611316,p25:-18293475,s24:99737836,s25:58059525,n24:-7611316,n25:-18293475},{name:\'PB VIETNAM\',full:\'PARIS BAGUETTE VIETNAM CO. LTD.\',p24:-1594250,p25:-1566599,s24:5850094,s25:3294432,n24:-1594250,n25:-1566599}];\nconst won=x=>x/100000, fmt=(x,d=1)=>Number(x).toLocaleString(\'ko-KR\',{minimumFractionDigits:d,maximumFractionDigits:d}), money=x=>fmt(won(x)), sign=x=>(x>0?\'+\':\'\')+money(x), rate=(n,d)=>n/d*100, delta=(a,b)=>a-b, el=id=>document.getElementById(id), red=x=>x<0?\'negative\':\'\', green=x=>x>0?\'positive\':\'\';\nfunction kpi(label,value,note,cls=\'\'){return `<div class="kpi"><small>${label}</small><strong class="${cls}">${value}</strong><span>${note}</span></div>`}\nfunction table(headers,rows){return `<thead><tr>${headers.map((h,i)=>`<th class="${i?\'num\':\'\'}">${h}</th>`).join(\'\')}</tr></thead><tbody>${rows.map(r=>`<tr class="${r.total?\'total\':\'\'}">${r.values.map((v,i)=>`<td class="${i?\'num\':\'\'}">${v}</td>`).join(\'\')}</tr>`).join(\'\')}</tbody>`}\nfunction bars(items,max,color=\'\'){return items.map(o=>`<div class="barrow"><span title="${o.label}">${o.label}</span><div class="track"><div class="fill ${color}" style="width:${Math.max(1,Math.abs(o.value)/max*100)}%"></div></div><b style="text-align:right">${fmt(o.value)}억</b></div>`).join(\'\')}\nfunction renderOverview(){let a=raw[2024],b=raw[2025];el(\'mainKpis\').innerHTML=kpi(\'2025 매출액\',money(b.sales)+\'억\',\'전년 대비 \'+fmt(rate(b.sales-a.sales,a.sales))+\'%\')+kpi(\'2025 매출원가율\',fmt(rate(b.cogs,b.sales),2)+\'%\',\'전년 대비 \'+fmt(rate(b.cogs,b.sales)-rate(a.cogs,a.sales),2)+\'%p\', \'negative\')+kpi(\'2025 영업이익\',money(b.op)+\'억\',\'전년 대비 \'+sign(b.op-a.op)+\'억\',\'positive\')+kpi(\'2025 당기순손익\',money(b.net)+\'억\',\'전년 대비 \'+sign(b.net-a.net)+\'억\',\'negative\');el(\'overviewTable\').innerHTML=table([\'항목\',\'2023\',\'2024\',\'2025\',\'2025 증감\'],[[\'매출액\',\'sales\'],[\'매출원가\',\'cogs\'],[\'매출총이익\',\'gross\'],[\'영업이익\',\'op\'],[\'당기순손익\',\'net\']].map(([label,key])=>({values:[label,...[2023,2024,2025].map(y=>money(raw[y][key])),sign(b[key]-a[key])]})).concat([{values:[\'매출원가율\',...[2023,2024,2025].map(y=>fmt(rate(raw[y].cogs,raw[y].sales),2)+\'%\'),fmt(rate(b.cogs,b.sales)-rate(a.cogs,a.sales),2)+\'%p\'],total:true}]));el(\'overviewInsight\').innerHTML=`<b>핵심 진단</b> — 2025년 매출은 ${sign(b.sales-a.sales)}억 증가했지만 매출총이익은 ${sign(b.gross-a.gross)}억 감소했습니다. 영업이익은 증가한 반면 당기순손익은 ${money(b.net)}억으로 악화되어, <b>원가 구조와 투자손익을 별도로 분석할 필요</b>가 있습니다.`}\nfunction breakdown(type,y){let v=raw[y][type];return type===\'product\'?[[\'기초제품재고액\',v.begin,1],[\'당기제품제조원가\',v.make,1],[\'타계정에서 대체\',v.transfer,1],[\'기말제품재고액\',v.end,-1],[\'제품매출원가\',v.total,1]]:[[\'기초상품재고액\',v.begin,1],[\'당기상품매입액\',v.buy,1],[\'타계정에서 대체\',v.transfer,1],[\'기말상품재고액\',v.end,-1],[\'상품매출원가\',v.total,1]]}\nfunction renderDomestic(){let yr=+el(\'compare\').value,a=raw[yr],b=raw[2025];let productDiff=b.product.total-a.product.total,goodsDiff=b.goods.total-a.goods.total;el(\'costKpis\').innerHTML=kpi(\'전체 매출원가 증감\',sign(b.cogs-a.cogs)+\'억\',`${yr} → 2025`,\'negative\')+kpi(\'제품매출원가 증감\',sign(productDiff)+\'억\',\'제품 원가 항목\',\'negative\')+kpi(\'상품매출원가 증감\',sign(goodsDiff)+\'억\',\'상품 원가 항목\',goodsDiff<0?\'positive\':\'negative\')+kpi(\'매출원가율 증감\',fmt(rate(b.cogs,b.sales)-rate(a.cogs,a.sales),2)+\'%p\',`${yr} → 2025`,\'negative\');el(\'costBars\').innerHTML=bars([{label:\'제품매출원가\',value:won(b.product.total)},{label:\'상품매출원가\',value:won(b.goods.total)}],won(b.product.total));function partTable(type){let prev=breakdown(type,yr),curr=breakdown(type,2025);return table([\'구성 항목\',yr+\'년\',\'2025년\',\'증감\'],curr.map((r,i)=>({values:[r[0]+(r[2]===-1?\' (차감)\':\'\'),money(prev[i][1]),money(r[1]),sign(r[1]-prev[i][1])],total:i===curr.length-1})))}el(\'productTable\').innerHTML=partTable(\'product\');el(\'goodsTable\').innerHTML=partTable(\'goods\');let trans=b.product.transfer-a.product.transfer,make=b.product.make-a.product.make;el(\'domesticInsight\').innerHTML=`<b>원인 분해</b> — 제품매출원가는 ${sign(productDiff)}억 변했습니다. 이 중 <b>타계정 대체 항목 변화 ${sign(trans)}억</b>, 당기제품제조원가 변화 ${sign(make)}억이 관찰됩니다. 따라서 제품 원가 상승 전체를 원재료 가격 상승으로 설명하기보다는, <b>대체 항목의 성격과 상대계정을 우선 확인</b>해야 합니다.`}\nfunction renderGlobal(){let items=[...overseas],sort=el(\'sortGlobal\').value;items.sort((a,b)=>sort===\'loss\'?a.p25-b.p25:sort===\'change\'?(a.p25-a.p24)-(b.p25-b.p24):b.s25-a.s25);let sum24=overseas.reduce((s,o)=>s+o.p24,0),sum25=overseas.reduce((s,o)=>s+o.p25,0);el(\'globalKpis\').innerHTML=kpi(\'분석대상 해외 4개 법인 손익 합계\',money(sum25)+\'억\',\'2025년 지분법손익\',\'negative\')+kpi(\'전년 대비 지분법손익 변동\',sign(sum25-sum24)+\'억\',\'해외 4개 법인 합산\',\'negative\')+kpi(\'가장 큰 2025년 손실\',\'PB SINGAPORE\',\'지분법손실 \'+money(overseas[2].p25)+\'억\')+kpi(\'최대 악화 법인\',\'PB SINGAPORE\',\'전년 대비 \'+sign(overseas[2].p25-overseas[2].p24)+\'억\');el(\'globalBars\').innerHTML=bars(items.map(o=>({label:o.name,value:Math.abs(won(o.p25))})),Math.max(...items.map(o=>Math.abs(won(o.p25)))),\'red\');el(\'globalTable\').innerHTML=table([\'투자법인\',\'2024\',\'2025\',\'증감\'],items.map(o=>({values:[`<span title="${o.full}">${o.name}</span>`,money(o.p24),money(o.p25),sign(o.p25-o.p24)]})).concat([{values:[\'4개 법인 합계\',money(sum24),money(sum25),sign(sum25-sum24)],total:true}]));el(\'globalSalesTable\').innerHTML=table([\'피투자회사\',\'2024 매출\',\'2025 매출\',\'매출 증감률\',\'2025 순손익\'],items.map(o=>({values:[o.name,money(o.s24),money(o.s25),fmt(rate(o.s25-o.s24,o.s24))+\'%\',money(o.n25)]})));}\nfunction renderActions(){let a=raw[2024],b=raw[2025],p=b.product.transfer-a.product.transfer,sg=overseas[2];let actions=[{tag:\'우선 1 · 국내\',title:\'제품매출원가 대체 항목의 원장 검증\',fact:`2025년 제품매출원가의 \'타계정에서 대체\'가 전년 대비 ${sign(p)}억 증가.`,do:\'회계전표별 대체 사유·상대계정·월별 발생시점을 분류하고, 제품 제조원가 및 재고평가와의 연계 여부를 확인한다.\',need:\'내부 총계정원장, 재고수불부, 원가계산명세서\',kpi:\'대체 유형별 금액, 제품군별 매출총이익률\'}, {tag:\'우선 2 · 해외\',title:\'싱가포르 투자법인 손익 악화 원인 분리\',fact:`PB SINGAPORE 지분법손익 ${money(sg.p24)}억 → ${money(sg.p25)}억. 피투자회사 매출 ${money(sg.s24)}억 → ${money(sg.s25)}억.`,do:\'법인별 손익계산서에서 매출 감소, 인건비, 임차료, 물류비, 감가상각비 및 일회성 손익을 분리하고 지속 손실 여부를 점검한다.\',need:\'현지 법인별 상세 손익계산서, 점포별 매출, 고정비 내역\',kpi:\'현지 영업손익, 매출총이익률, 손실 개선 속도\'}, {tag:\'우선 3 · 국내\',title:\'2026년 가격 조정 이후 본사 공급 마진 추적\',fact:`2025년 전체 매출원가율 ${fmt(rate(b.cogs,b.sales),2)}%로 전년 ${fmt(rate(a.cogs,a.sales),2)}%보다 높음.`,do:\'가격 조정 대상 SKU의 본사 공급단가·출고량·표준/실제 제조원가를 전후 비교해 마진 악화 품목을 우선 점검한다.\',need:\'SKU별 공급단가, 출고량, 실제 제조원가\',kpi:\'SKU별 공헌이익, 공급 마진율, 원가 상승률\'}, {tag:\'우선 4 · 해외\',title:\'신규 해외 공장 투자 및 가동 원가 관리\',fact:\'해외 생산거점 투자 확대는 장기적인 비용·자금 관리 과제이나, 공장별 실적 수치는 공개자료에서 확인되지 않음.\',do:\'공장별 투자예산·집행액·건설중인자산을 관리하고, 사용 가능 시점부터 감가상각비와 정상품 단위당 제조원가를 점검한다.\',need:\'공장별 CAPEX 집행표, 자산대장, 월별 생산·수율 데이터\',kpi:\'투자예산 편차, 가동률, 정상품 단위당 원가\'}];el(\'actions\').innerHTML=actions.map(x=>`<div class="action"><div class="head"><span class="tag">${x.tag}</span><h3>${x.title}</h3></div><p><b>확인 근거:</b> ${x.fact}</p><p><b>실행 방안:</b> ${x.do}</p><p><b>추가 확보 자료:</b> ${x.need}</p><small><b>검증 지표:</b> ${x.kpi}</small></div>`).join(\'\')}\ndocument.querySelectorAll(\'.nav button\').forEach(btn=>btn.addEventListener(\'click\',()=>{document.querySelectorAll(\'.nav button\').forEach(b=>b.classList.toggle(\'active\',b===btn));document.querySelectorAll(\'.panel\').forEach(p=>p.classList.toggle(\'active\',p.id===btn.dataset.tab));window.scrollTo({top:0,behavior:\'smooth\'})}));el(\'compare\').addEventListener(\'change\',renderDomestic);el(\'sortGlobal\').addEventListener(\'change\',renderGlobal);renderOverview();renderDomestic();renderGlobal();renderActions();\n</script></body></html>\n'
+def won(x):return f'{x:,.1f}억 원'
+def pct(a,b):return (a/b*100) if b else 0
+def delta(k):return D[2025][k]-D[2024][k]
+def metrics(items):
+ cols=st.columns(len(items))
+ for col,(label,value,change) in zip(cols,items):col.metric(label,value,change)
+def table(df,fmt='{:.1f}'):
+ st.dataframe(df,hide_index=True,use_container_width=True)
 
-components.html(HTML, height=1200, scrolling=True)
+def note(text):st.caption('자료: '+text)
+
+st.title('파리크라상 | 회계 관점 경영진단')
+st.write('**사업구조 이해 → 국내 수익성 → 해외 투자성과 → 실행 가능한 관리 제안**')
+st.warning('**비교 범위 주의:** 2024~2025년 수치는 2026년 1월 회사 분할 이전의 **구 파리크라상(현 상미당홀딩스)** 별도재무제표입니다. 2026년 신설 파리크라상의 현재 실적이나 가격 조정 효과로 직접 해석할 수 없습니다.',icon='⚠️')
+
+t1,t2,t3,t4=st.tabs(['① 사업·성과 진단','② 국내 수익성·운전자본','③ 해외 투자성과','④ 회계 개선 실행안'])
+with t1:
+ st.subheader('사업의 숫자가 어디서 발생하는가')
+ a,b,c=st.columns(3)
+ a.info('**국내 가맹점 공급**\n\n본부의 제품 공급매출과 가맹점의 소비자 판매액은 구분해서 보아야 합니다.')
+ b.info('**해외 생산거점 확대**\n\n공장 투자·가동 준비비용과 기존 투자법인의 손익을 혼동하지 않아야 합니다.')
+ c.info('**법인 분할·ERP 전환**\n\n분할 전후 회계주체, 계정과목, 내부거래 및 비교 기준의 일관성을 확인해야 합니다.')
+ st.subheader('2025년 별도 재무성과')
+ metrics([('매출액',won(D[2025]['sales']),f'{delta("sales"):+,.1f}억'),('매출총이익',won(D[2025]['gross']),f'{delta("gross"):+,.1f}억'),('영업이익',won(D[2025]['op']),f'{delta("op"):+,.1f}억'),('영업현금흐름',won(D[2025]['ocf']),f'{delta("ocf"):+,.1f}억')])
+ trend=pd.DataFrame([{'연도':str(y),'매출액':D[y]['sales'],'매출총이익':D[y]['gross'],'영업이익':D[y]['op']} for y in (2024,2025)])
+ left,right=st.columns([1.4,1])
+ with left:
+  fig=go.Figure()
+  for k in ['매출액','매출총이익','영업이익']:fig.add_trace(go.Bar(name=k,x=trend['연도'],y=trend[k],text=[f'{v:,.0f}' for v in trend[k]],textposition='auto'))
+  fig.update_layout(barmode='group',height=350,yaxis_title='억 원',legend_orientation='h',margin=dict(t=25,b=25))
+  st.plotly_chart(fig,use_container_width=True)
+ with right:
+  st.markdown('**발견한 과제**')
+  st.write(f'• 매출액은 **{delta("sales"):+,.1f}억 원** 증가했지만 매출총이익은 **{delta("gross"):+,.1f}억 원** 변동했습니다.')
+  st.write(f'• 매출총이익률은 **{pct(D[2024]["gross"],D[2024]["sales"]):.2f}% → {pct(D[2025]["gross"],D[2025]["sales"]):.2f}%**로 낮아졌습니다.')
+  st.write(f'• 영업현금흐름은 **{delta("ocf"):+,.1f}억 원** 변동해, 이익뿐 아니라 현금 회수도 살펴야 합니다.')
+  st.info('**진단의 초점:** 매출 성장 자체보다 수익성·현금창출력으로 연결됐는지 확인합니다.')
+ st.divider()
+ st.subheader('연결 기준 비용 증가: 별도 실적과 분리해서 확인')
+ ca,cb=CON[2024],CON[2025]
+ metrics([('연결 광고선전비',won(cb['advert']),f'{cb["advert"]-ca["advert"]:+,.1f}억'),('연결 지급수수료',won(cb['fees']),f'{cb["fees"]-ca["fees"]:+,.1f}억'),('연결 영업이익',won(cb['op']),f'{cb["op"]-ca["op"]:+,.1f}억')])
+ st.caption('광고선전비·지급수수료의 증가 원인이 어느 법인·사업에 귀속되는지는 연결감사보고서만으로 확정할 수 없습니다. 국내 신설 사업회사의 비용 증가로 단정하지 않습니다.')
+ note('2025년 별도감사보고서 손익계산서·현금흐름표, 2025년 연결감사보고서 손익계산서 및 판관비 주석')
+
+with t2:
+ st.subheader('국내 수익성: 매출은 증가했는데 왜 매출총이익은 감소했을까?')
+ metrics([('매출 증가',won(delta('sales')),'2024 → 2025'),('매출원가 증가',won(delta('cogs')),'2024 → 2025'),('매출총이익 변화',won(delta('gross')),'2024 → 2025')])
+ df=pd.DataFrame([{'항목':x,'2024년':D[2024][k],'2025년':D[2025][k],'증감':delta(k)} for x,k in [('제품매출액','prod_sales'),('상품매출액','goods_sales'),('기타매출액','other_sales'),('제품매출원가','prod_cogs'),('상품매출원가','goods_cogs'),('당기제품제조원가','prod_make'),('제품 타계정 대체','prod_transfer'),('당기상품매입액','goods_purchase'),('상품 타계정 대체','goods_transfer')]])
+ st.dataframe(df.style.format({'2024년':'{:,.1f}','2025년':'{:,.1f}','증감':'{:+,.1f}'}),hide_index=True,use_container_width=True)
+ st.info('**해석:** 제품매출원가 증가액 대부분이 「타계정에서 대체」 항목의 증가와 수치상 연관되지만, 상품의 같은 항목은 반대로 감소했습니다. 이 항목을 실제 제조비용 상승이나 절감 가능액으로 해석해서는 안 됩니다. 제품·상품 간 분류 및 대체 상대계정을 확인해야 합니다.')
+ st.markdown('**회계 담당자의 실제 확인사항**')
+ st.write('제품군별 공급단가·판매량·재료비·노무비 자료를 같은 기준으로 비교해 **가격 효과와 수량·원가 효과를 구분**합니다. 공개 감사보고서만으로 제품군별 원가율이나 2026년 가격 인상의 수익성 효과를 계산할 수는 없습니다.')
+ st.divider()
+ st.subheader('운전자본: 매출 증가보다 빠른 매출채권 증가')
+ metrics([('기말 매출채권(순액)',won(D[2025]['ar']),f'{delta("ar"):+,.1f}억'),('기말 재고자산',won(D[2025]['inventory']),f'{delta("inventory"):+,.1f}억'),('영업현금흐름',won(D[2025]['ocf']),f'{delta("ocf"):+,.1f}억')])
+ ar_growth=pct(delta('ar'),D[2024]['ar']);sales_growth=pct(delta('sales'),D[2024]['sales'])
+ st.write(f'2024~2025년 매출 증가율은 **{sales_growth:.1f}%**, 기말 매출채권(순액) 증가율은 **{ar_growth:.1f}%**입니다. 이 차이는 회수 조건이나 거래처 구성 변화의 **점검 신호**이지, 연체가 입증됐다는 뜻은 아닙니다.')
+ st.markdown('**공개자료 기반 회전일수 참고치**')
+ dso=pct((D[2024]['ar']+D[2025]['ar'])/2,D[2025]['sales'])*365/100
+ st.metric('2025년 매출채권 회전일수(근사)',f'{dso:.1f}일',help='2024·2025 기말 매출채권 평균 / 2025년 매출액 × 365. 연말 잔액과 매출액의 범위 차이, 계절성 등에 주의하세요.')
+ st.caption('전년 회전일수와의 정확한 비교에는 2023년 말 매출채권 잔액이 추가로 필요합니다. 회수 지연 판단에는 거래처별 연령분석·연체내역·계약조건이 필요합니다.')
+ note('2025년 별도감사보고서 재무상태표, 현금흐름표, 주석 4·5·17·18')
+
+with t3:
+ st.subheader('해외 투자성과: 손실 규모보다 변화 원인')
+ st.write('별도재무제표 **지분법손익** 기준입니다. 지분법손실은 해당 연도의 현금 유출액이나 특정 해외 공장의 영업손실과 같지 않습니다.')
+ view=st.radio('표시 대상',['전체 주요 투자법인','해외 투자법인 4곳'],horizontal=True)
+ dd=INV if view=='전체 주요 투자법인' else INV.iloc[:4]
+ metrics([('표시 법인 2025년 손익 합계',won(dd['2025'].sum()),'지분법손익 합계'),('전년 대비 손익 변화',won(dd['변화'].sum()),'표시 법인 기준')])
+ fig=px.bar(dd.sort_values('변화'),x='변화',y='법인',orientation='h',color='변화',color_continuous_scale=['#bb4556','#e8eaf1','#167e70'],labels={'변화':'지분법손익 증감(억 원)','법인':''},height=max(320,len(dd)*54))
+ fig.update_layout(coloraxis_showscale=False,margin=dict(t=20,b=20))
+ st.plotly_chart(fig,use_container_width=True)
+ st.dataframe(dd[['법인','분류','2024','2025','변화']].style.format({'2024':'{:,.1f}','2025':'{:,.1f}','변화':'{:+,.1f}'}),hide_index=True,use_container_width=True)
+ st.warning('**분석 범위:** 위 표는 선정된 투자법인만 보여줍니다. 전체 지분법손익 총계와 일치하지 않을 수 있으며, SPC INVESTMENT·싱가포르·미국 투자법인의 손실을 말레이시아 공장 또는 텍사스 공장 손실로 연결할 근거는 없습니다.')
+ st.markdown('**회계 담당자의 후속 점검:** 손실 악화 법인의 예산 대비 실적, 영업·비영업손익, 초기투자 비용, 현금흐름, 투자장부금액 및 손상 징후를 법인별로 확인합니다.')
+ note('2025년 별도감사보고서 주석 8 「지분법적용투자주식」')
+
+with t4:
+ st.subheader('발견한 문제를 실제 관리 업무로 연결하기')
+ tasks=[
+ ('1 · 국내 수익성','매출 +473억 원에도 매출총이익 약 40억 원 감소','제품군별 공급단가·판매수량·재료비·노무비·제품/상품 계정 대체 내역','가격·수량·제품구성·원가 요인을 분해하고 수익성 악화 제품군의 공급·생산조건 점검','제품군별 매출총이익률, 단위원가, 원가 차이'),
+ ('2 · 현금 회수','매출 +2.4% 대비 기말 매출채권 약 +24.1%','거래처별 채권 연령표, 계약 회수기일, 입금 이력, 특수관계자 거래','회수기일 초과 채권부터 원인 확인, 거래처별 회수조건·한도 재검토','연체율, 30/60/90일 이상 채권, 회전일수'),
+ ('3 · 연결 비용','연결 광고선전비·지급수수료 증가','법인별·계정별 판관비 명세, 계약서, 캠페인 성과 및 수수료 산정 기준','증가 비용의 귀속 법인과 비용 효과를 확인하고 재계약·예산배분 검토','매출 대비 비용률, 계약별 수수료율, 집행 대비 성과'),
+ ('4 · 해외 투자','일부 해외 투자법인 지분법손실 확대','법인별 예산/실적, 손익 세부내역, 투자집행, 현금흐름, 자산가치 자료','손실 확대 법인을 우선 점검하고 일회성 투자비와 반복 손실 구분','법인별 손익 편차, 투자집행률, 가동률, 손상 징후'),
+ ('5 · 분할·ERP','2026년 회사 분할과 신규 ERP 운영에 따른 비교·집계 기준 점검 필요','분할 재무제표, 계정 매핑표, 내부거래 명세, 마스터 데이터, 전표 승인기록','분할 전후 비교가능성 검증 및 계정·법인·거래별 대사 절차 표준화','대사 불일치 건수, 수정분개, 결산 마감 소요일')]
+ for title,signal,needed,action,kpi in tasks:
+  with st.expander(title+' | '+signal,expanded=title.startswith('1')):
+   st.markdown(f'**공개자료에서 발견한 신호**  \n{signal}')
+   st.markdown(f'**추가 확보할 내부자료**  \n{needed}')
+   st.markdown(f'**실행 제안**  \n{action}')
+   st.markdown(f'**관리 지표**  \n{kpi}')
+ st.divider()
+ st.subheader('면접·자소서용 핵심 설명')
+ st.success('"국내에서는 매출 증가에도 매출총이익이 감소하고 매출채권이 빠르게 늘어난 점에 주목했습니다. 해외에서는 투자법인별 지분법손익을 비교해 점검 우선순위를 설정했습니다. 공개자료로 원인을 단정하기보다, 회계 담당자가 추가로 확인할 자료와 관리 지표까지 연결하도록 프로그램을 설계했습니다."')
+ st.caption('본 프로그램은 공개 감사보고서 기반 교육·취업 준비용 분석입니다. 실무상 개선 효과와 인과관계는 내부 원가·거래·계약 자료로 검증해야 합니다.')
